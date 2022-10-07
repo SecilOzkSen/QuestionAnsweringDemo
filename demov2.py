@@ -64,7 +64,6 @@ def load_dataframe():
     data = pd.read_csv(DATAFRAME_FILE, index_col=0, sep='|')
     return data
 
-@st.cache(show_spinner=False, allow_output_mutation=True)
 def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     #Semantic Search (Retrieve)
     question_embedding = bi_encoder.encode(question, convert_to_tensor=True)
