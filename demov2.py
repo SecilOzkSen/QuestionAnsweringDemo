@@ -93,11 +93,14 @@ def paragraph_embeddings():
     return context_embeddings, paragraphs
 
 def retrieve_rerank_pipeline(question, context_embeddings, paragraphs, bi_encoder, cross_encoder):
+    print("hatayı anlayalım")
     top_5_contexes = search(question, context_embeddings, paragraphs, bi_encoder, cross_encoder)
+    print("burada değil!")
     return top_5_contexes
 
 def qa_pipeline(question, context, nlp):
-    return nlp({'question': question, 'context': context})
+    print("yoksa burada mı?")
+    return nlp({'question': question.strip(), 'context': context})
 
 def interactive_table(dataframe):
     gb = GridOptionsBuilder.from_dataframe(dataframe)
