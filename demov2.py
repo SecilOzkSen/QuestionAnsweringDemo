@@ -75,6 +75,8 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     #Rerank - score all retrieved passages with cross-encoder
     cross_inp = [[question, contexes[hit['corpus_id']]] for hit in hits]
     cross_scores = cross_encoder.predict(cross_inp)
+    print("cross-scores")
+    print(cross_scores)
 
     # Sort results by the cross-encoder scores
     for idx in range(len(cross_scores)):
@@ -83,10 +85,8 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     # Output of top-5 hits from re-ranker
     hits = sorted(hits, key=lambda x: x['cross-score'], reverse=True)
     top_5_contexes = []
-    top_5_cross_scores = []
     for hit in hits[0:5]:
         top_5_contexes.append(contexes[hit['corpus_id']])
-        top_5_cross_scores.append("{:.3f}".format(hit['cross-score']))
     print("seçtiklerimiz")
     print(top_5_contexes)
     return top_5_contexes
