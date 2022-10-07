@@ -19,6 +19,7 @@ def load_models(auth_token):
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     bi_encoder.max_seq_length = 500  # Truncate long passages to 256 tokens
     cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+
     model_name = "secilozksen/roberta-base-squad2-policyqa"
     nlp = pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token, revision="main")
     return bi_encoder, cross_encoder, nlp
@@ -75,7 +76,6 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     #Rerank - score all retrieved passages with cross-encoder
     cross_inp = [[question, contexes[hit['corpus_id']]] for hit in hits]
     cross_scores = cross_encoder.predict(cross_inp)
-    print("cross-scores")
     print(cross_scores)
 
     # Sort results by the cross-encoder scores
@@ -87,7 +87,6 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     top_5_contexes = []
     for hit in hits[0:5]:
         top_5_contexes.append(contexes[hit['corpus_id']])
-    print("seçtiklerimiz")
     print(top_5_contexes)
     return top_5_contexes
 
@@ -174,7 +173,6 @@ def qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cro
             st.write(selection['answer'])
             st.session_state.grid_click = False
 
-@st.cache(show_spinner=False)
 def load():
     context_embeddings, paragraphs = load_paragraphs()
     dataframe = load_dataframe()
