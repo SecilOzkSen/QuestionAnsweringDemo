@@ -174,6 +174,7 @@ def qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cro
             st.write(selection['answer'])
             st.session_state.grid_click = False
 
+@st.cache(show_spinner=False)
 def load():
     context_embeddings, paragraphs = load_paragraphs()
     dataframe = load_dataframe()
