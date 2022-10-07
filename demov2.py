@@ -178,7 +178,7 @@ def load():
     bi_encoder, cross_encoder, nlp = copy.deepcopy(load_models(st.secrets["AUTH_TOKEN"]))
     return context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp
 
-if __name__ == '__main__':
+
  #   save_dataframe()
-     context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp = load()
-     qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp)
+context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp = load()
+qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp)
