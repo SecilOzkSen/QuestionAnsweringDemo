@@ -85,6 +85,8 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     for hit in hits[0:5]:
         top_5_contexes.append(contexes[hit['corpus_id']])
         top_5_cross_scores.append("{:.3f}".format(hit['cross-score']))
+    print("seçtiklerimiz")
+    print(top_5_contexes)
     return top_5_contexes
 
 def paragraph_embeddings():
@@ -95,7 +97,6 @@ def paragraph_embeddings():
 def retrieve_rerank_pipeline(question, context_embeddings, paragraphs, bi_encoder, cross_encoder):
     print("hatayı anlayalım")
     top_5_contexes = search(question, context_embeddings, paragraphs, bi_encoder, cross_encoder)
-    print("burada değil!")
     return top_5_contexes
 
 def qa_pipeline(question, context, nlp):
@@ -137,6 +138,8 @@ def qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cro
             st.session_state.form_submit = True
         if st.session_state.form_submit and question != '':
             with st.spinner(text='Related context search in progress..'):
+                print("pickle filedan gelenler")
+                print(context_embeddings[0:5])
                 top_5_contexes = retrieve_rerank_pipeline(question, context_embeddings, paragraphs, bi_encoder,
                                                           cross_encoder)
             if len(top_5_contexes) == 0:
