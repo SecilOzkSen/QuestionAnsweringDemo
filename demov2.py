@@ -64,14 +64,15 @@ def load_dataframe():
     data = pd.read_csv(DATAFRAME_FILE, index_col=0, sep='|')
     return data
 
+@st.cache(show_spinner=False)
 def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     #Semantic Search (Retrieve)
-    print("Encode mi hata?")
     question_embedding = bi_encoder.encode(question, convert_to_tensor=True)
-    print("encode da değil?")
     hits = util.semantic_search(question_embedding, corpus_embeddings, top_k=100)
-    print("semantic search bitti")
+    if len(hits) == 0:
+        return []
     hits = hits[0]
+    print(hits)
     #Rerank - score all retrieved passages with cross-encoder
     cross_inp = [[question, contexes[hit['corpus_id']]] for hit in hits]
     cross_scores = cross_encoder.predict(cross_inp)
