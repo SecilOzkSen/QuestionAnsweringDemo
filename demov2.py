@@ -14,13 +14,29 @@ st.set_page_config(layout="wide")
 PARAGRAPHS_ONLY = "train.json"
 DATAFRAME_FILE = 'policyQA2.csv'
 
-@st.cache(hash_funcs={tokenizers.Tokenizer: lambda _: None, tokenizers.AddedToken: lambda _: None}, show_spinner=False)
-def load_models(auth_token):
+@st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
+def cross_encoder_init():
+    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+    return cross_encoder
+
+@st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
+def bi_encoder_init():
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
     bi_encoder.max_seq_length = 500  # Truncate long passages to 256 tokens
-    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+    return bi_encoder
+
+@st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
+def nlp_init(auth_token):
     model_name = "secilozksen/roberta-base-squad2-policyqa"
-    nlp = pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token, revision="main")
+    nlp = pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token,
+                   revision="main")
+    return nlp
+
+@st.cache(hash_funcs={tokenizers.Tokenizer: lambda _: None, tokenizers.AddedToken: lambda _: None}, show_spinner=False)
+def load_models(auth_token):
+    bi_encoder = bi_encoder_init()
+    cross_encoder = cross_encoder_init()
+    nlp = nlp_init(auth_token)
     return bi_encoder, cross_encoder, nlp
 
 def context():
