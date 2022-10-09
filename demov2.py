@@ -87,11 +87,9 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     if len(hits) == 0:
         return []
     hits = hits[0]
-    print(hits)
     #Rerank - score all retrieved passages with cross-encoder
     cross_inp = [[question, contexes[hit['corpus_id']]] for hit in hits]
     cross_scores = cross_encoder.predict(cross_inp)
-    print(cross_scores)
 
     # Sort results by the cross-encoder scores
     for idx in range(len(cross_scores)):
@@ -102,7 +100,6 @@ def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     top_5_contexes = []
     for hit in hits[0:5]:
         top_5_contexes.append(contexes[hit['corpus_id']])
-    print(top_5_contexes)
     return top_5_contexes
 
 def paragraph_embeddings():
@@ -111,12 +108,10 @@ def paragraph_embeddings():
     return context_embeddings, paragraphs
 
 def retrieve_rerank_pipeline(question, context_embeddings, paragraphs, bi_encoder, cross_encoder):
-    print(question)
     top_5_contexes = search(question, context_embeddings, paragraphs, bi_encoder, cross_encoder)
     return top_5_contexes
 
 def qa_pipeline(question, context, nlp):
-    print("yoksa burada mı?")
     return nlp({'question': question.strip(), 'context': context})
 
 def interactive_table(dataframe):
