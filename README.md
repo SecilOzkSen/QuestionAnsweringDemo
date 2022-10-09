@@ -2,8 +2,9 @@
 
 ## Create the environment
 
-conda env create --file environment.yml
-conda activate qaDemov2
+$conda env create --file environment.yml
+
+$conda activate qaDemov2
 
 After installing requirements, please make sure that you add huggingface authorization token to your ./.streamlit/secret.toml file.
 
