@@ -26,9 +26,8 @@ def bi_encoder_init():
     return bi_encoder
 
 @st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
-def nlp_init(auth_token):
-    model_name = "secilozksen/roberta-base-squad2-policyqa"
-    return pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token,
+def nlp_init(auth_token, private_model_name):
+    return pipeline('question-answering', model=private_model_name, tokenizer=private_model_name, use_auth_token=auth_token,
                    revision="main")
 
 @st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
@@ -38,10 +37,10 @@ def nlp_pipeline_hf():
 
 
 @st.cache(hash_funcs={tokenizers.Tokenizer: lambda _: None, tokenizers.AddedToken: lambda _: None}, show_spinner=False)
-def load_models(auth_token):
+def load_models(auth_token, private_model_name):
     bi_encoder = bi_encoder_init()
     cross_encoder = cross_encoder_init()
-    nlp = nlp_init(auth_token)
+    nlp = nlp_init(auth_token, private_model_name)
     nlp_hf = nlp_pipeline_hf()
 
     return bi_encoder, cross_encoder, nlp, nlp_hf
@@ -202,7 +201,7 @@ def qa_main_widgetsv2():
 def load():
     context_embeddings, paragraphs = load_paragraphs()
     dataframe_original, dataframe_bsbs = load_dataframes()
-    bi_encoder, cross_encoder, nlp, nlp_hf = copy.deepcopy(load_models(st.secrets["AUTH_TOKEN"]))
+    bi_encoder, cross_encoder, nlp, nlp_hf = copy.deepcopy(load_models(st.secrets["AUTH_TOKEN"], st.secrets["MODEL_NAME"]))
     return context_embeddings, paragraphs, dataframe_original, dataframe_bsbs, bi_encoder, cross_encoder, nlp, nlp_hf
 
 
