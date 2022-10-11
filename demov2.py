@@ -11,8 +11,8 @@ import pickle
 
 st.set_page_config(layout="wide")
 
-PARAGRAPHS_ONLY = "train.json"
-DATAFRAME_FILE = 'policyQA2.csv'
+DATAFRAME_FILE_ORIGINAL = 'policyQA_original.csv'
+DATAFRAME_FILE_BSBS = 'policyQA_bsbs.csv'
 
 @st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
 def cross_encoder_init():
@@ -28,16 +28,23 @@ def bi_encoder_init():
 @st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
 def nlp_init(auth_token):
     model_name = "secilozksen/roberta-base-squad2-policyqa"
-    nlp = pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token,
+    return pipeline('question-answering', model=model_name, tokenizer=model_name, use_auth_token=auth_token,
                    revision="main")
-    return nlp
+
+@st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
+def nlp_pipeline_hf():
+    model_name = "deepset/roberta-base-squad2"
+    return pipeline('question-answering', model=model_name, tokenizer=model_name)
+
 
 @st.cache(hash_funcs={tokenizers.Tokenizer: lambda _: None, tokenizers.AddedToken: lambda _: None}, show_spinner=False)
 def load_models(auth_token):
     bi_encoder = bi_encoder_init()
     cross_encoder = cross_encoder_init()
     nlp = nlp_init(auth_token)
-    return bi_encoder, cross_encoder, nlp
+    nlp_hf = nlp_pipeline_hf()
+
+    return bi_encoder, cross_encoder, nlp, nlp_hf
 
 def context():
     bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
@@ -48,22 +55,6 @@ def context():
         context_embeddings = bi_encoder.encode(paragraphs, convert_to_tensor=True, show_progress_bar=True)
         pickle.dump({'contexes': paragraphs, 'embeddings': context_embeddings}, fIn)
 
-def to_csv():
-    with open("/home/secilsen/PycharmProjects/semanticSearchDemo/dataset/train/train.json", 'r', encoding='utf-8') as f:
-        json_str = json.load(f)
-    data = json_str["data"]
-    squad_data = []
-    contexes = []
-    for title in data:
-        paragraphs = title["paragraphs"]
-        for paragraph in paragraphs:
-            contexes.append(paragraph["context"])
-            if len(paragraph['qas']) == 0:
-                continue
-            answer = paragraph['qas'][0]['answers'][0]['text']
-            question = paragraph['qas'][0]['question']
-            squad_data.append({'context': paragraph["context"], 'question': question, 'answer': answer})
-    return squad_data, contexes
 
 @st.cache(show_spinner=False)
 def load_paragraphs():
@@ -76,9 +67,12 @@ def load_paragraphs():
 
 
 @st.cache(show_spinner=False)
-def load_dataframe():
-    data = pd.read_csv(DATAFRAME_FILE, index_col=0, sep='|')
-    return data
+def load_dataframes():
+    data_original = pd.read_csv(DATAFRAME_FILE_ORIGINAL, index_col=0, sep='|')
+    data_bsbs = pd.read_csv(DATAFRAME_FILE_BSBS, index_col=0, sep='|')
+    data_original = data_original.sample(frac=1).reset_index(drop=True)
+    data_bsbs = data_bsbs.sample(frac=1).reset_index(drop=True)
+    return data_original, data_bsbs
 
 def search(question, corpus_embeddings, contexes, bi_encoder, cross_encoder):
     #Semantic Search (Retrieve)
@@ -136,9 +130,9 @@ def interactive_table(dataframe):
     return grid_response
 
 
-def qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp):
+def qa_main_widgetsv2():
     st.title("Question Answering Demo")
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns([2,1,1])
     with col1:
         form = st.form(key='first_form')
         question = form.text_area("What is your question?:", height=200)
@@ -156,40 +150,62 @@ def qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cro
                 st.session_state.form_submit = False
             else:
                 with st.spinner(text='Now answering your question..'):
-                    answer = nlp(question, top_5_contexes[0])
-                if answer == '':
-                    st.error("Answer not found!")
-                else:
-                    st.markdown("## Related Context:")
-                    st.markdown(top_5_contexes[0])
-                    st.markdown("## Answer:")
-                    st.markdown(answer['answer'])
+                    for i, context in enumerate(top_5_contexes):
+                        answer_trained = nlp(question, context)
+                        answer_base = nlp(question, context)
+                        st.markdown(f"## Related Context - {i + 1}:")
+                        st.markdown(context)
+                        st.markdown("## Answer (trained):")
+                        st.markdown(answer_trained['answer'])
+                        st.markdown("## Answer (deepset/roberta-base-squad2):")
+                        st.markdown(answer_base['answer'])
+                        st.markdown("""---""")
 
     with col2:
-        grid_response = interactive_table(dataframe)
-        data = grid_response['selected_rows']
-        if "grid_click" not in st.session_state:
-            st.session_state.grid_click = False
-        if len(data) > 0:
-            st.session_state.grid_click = True
-        if st.session_state.grid_click:
-            selection = data[0]
-         #   st.markdown("## Context & Answer:")
+        st.markdown("## Original Questions")
+        grid_response = interactive_table(dataframe_original)
+        data1 = grid_response['selected_rows']
+        if "grid_click_1" not in st.session_state:
+            st.session_state.grid_click_1 = False
+        if len(data1) > 0:
+            st.session_state.grid_click_1 = True
+        if st.session_state.grid_click_1:
+            selection = data1[0]
+            #   st.markdown("## Context & Answer:")
             st.markdown("### Context:")
             st.write(selection['context'])
             st.markdown("### Question:")
             st.write(selection['question'])
             st.markdown("### Answer:")
             st.write(selection['answer'])
-            st.session_state.grid_click = False
+            st.session_state.grid_click_1 = False
+    with col3:
+        st.markdown("## Our Questions")
+        grid_response = interactive_table(dataframe_bsbs)
+        data2 = grid_response['selected_rows']
+        if "grid_click_2" not in st.session_state:
+            st.session_state.grid_click_2 = False
+        if len(data2) > 0:
+            st.session_state.grid_click_2 = True
+        if st.session_state.grid_click_2:
+            selection = data2[0]
+            #   st.markdown("## Context & Answer:")
+            st.markdown("### Context:")
+            st.write(selection['context'])
+            st.markdown("### Question:")
+            st.write(selection['question'])
+            st.markdown("### Answer:")
+            st.write(selection['answer'])
+            st.session_state.grid_click_2 = False
+
 
 def load():
     context_embeddings, paragraphs = load_paragraphs()
-    dataframe = load_dataframe()
-    bi_encoder, cross_encoder, nlp = copy.deepcopy(load_models(st.secrets["AUTH_TOKEN"]))
-    return context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp
+    dataframe_original, dataframe_bsbs = load_dataframes()
+    bi_encoder, cross_encoder, nlp, nlp_hf = copy.deepcopy(load_models(st.secrets["AUTH_TOKEN"]))
+    return context_embeddings, paragraphs, dataframe_original, dataframe_bsbs, bi_encoder, cross_encoder, nlp, nlp_hf
 
 
  #   save_dataframe()
-context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp = load()
-qa_main_widgetsv2(context_embeddings, paragraphs, dataframe, bi_encoder, cross_encoder, nlp)
+context_embeddings, paragraphs, dataframe_original, dataframe_bsbs, bi_encoder, cross_encoder, nlp, nlp_hf = load()
+qa_main_widgetsv2()
