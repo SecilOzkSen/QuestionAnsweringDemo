@@ -12,7 +12,7 @@ import pickle
 st.set_page_config(layout="wide")
 
 DATAFRAME_FILE_ORIGINAL = 'policyQA_original.csv'
-DATAFRAME_FILE_BSBS = 'policyQA_bsbs.csv'
+DATAFRAME_FILE_BSBS = 'policyQA_bsbs_sentence.csv'
 
 @st.experimental_singleton(suppress_st_warning=True, show_spinner=False)
 def cross_encoder_init():
@@ -46,10 +46,10 @@ def load_models(auth_token, private_model_name):
     return bi_encoder, cross_encoder, nlp, nlp_hf
 
 def context():
-    bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
-    with open("policy_qa_paragraph_only.json", 'r', encoding='utf-8') as f:
+    bi_encoder = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1', device='cpu')
+    with open("/home/secilsen/PycharmProjects/SquadOperations/contexes.json", 'r', encoding='utf-8') as f:
         paragraphs = json.load(f)
-        paragraphs = paragraphs['paragraphs']
+        paragraphs = paragraphs['contexes']
     with open('context-embeddings.pkl', "wb") as fIn:
         context_embeddings = bi_encoder.encode(paragraphs, convert_to_tensor=True, show_progress_bar=True)
         pickle.dump({'contexes': paragraphs, 'embeddings': context_embeddings}, fIn)
@@ -150,8 +150,8 @@ def qa_main_widgetsv2():
             else:
                 with st.spinner(text='Now answering your question..'):
                     for i, context in enumerate(top_5_contexes):
-                        answer_trained = nlp(question, context)
-                        answer_base = nlp(question, context)
+                        answer_trained = qa_pipeline(question, context, nlp)
+                        answer_base = qa_pipeline(question, context, nlp_hf)
                         st.markdown(f"## Related Context - {i + 1}:")
                         st.markdown(context)
                         st.markdown("## Answer (trained):")
@@ -208,3 +208,6 @@ def load():
  #   save_dataframe()
 context_embeddings, paragraphs, dataframe_original, dataframe_bsbs, bi_encoder, cross_encoder, nlp, nlp_hf = load()
 qa_main_widgetsv2()
+
+#if __name__ == '__main__':
+#    context()
